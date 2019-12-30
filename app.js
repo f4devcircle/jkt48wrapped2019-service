@@ -23,12 +23,18 @@ exports.main = async (req, res) => {
             }
         })
 
-        let listShow = await mostShow(Cookie);
-        let name = await setName(Cookie);
-        
-        listShow.name = name;
-
-        res.status(200).json(listShow);
+        if (login.data.includes('Alamat email atau Kata kunci salah')) {
+            res.status(400).json({
+                msg: 'wrong email / password'
+            })
+        } else {
+            let listShow = await mostShow(Cookie);
+            let name = await setName(Cookie);
+            
+            listShow.name = name;
+    
+            res.status(200).json(listShow);
+        }    
     } catch (err) {
         console.log(err);
         res.status(500).json(err);
