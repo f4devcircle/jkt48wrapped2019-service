@@ -1,31 +1,98 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
-const HS_PAGE = 'mypage/handshake-session?lang=id';
+const tableParser = require('cheerio-tableparser');
+const fs = require('fs');
 
 const baseURL = 'https://jkt48.com/';
-
-const handshake = async Cookie => {
-    const response = await axios.get(baseURL + HS_PAGE, {
-        headers: {
-            Cookie
-        }
-    });
-    require('fs').writeFileSync('./a.html', response.data)
-}
-
-const parse = _ => {
-    const firstHSId = 45;
-    const lastHSId = 67;
-    const page = cheerio.load(require('fs').readFileSync('./a.html', 'utf-8'));
-    const hs45 = page(`#handshake${lastHSId}`);
-    const table = page(hs45).html();
-    console.log(table);
-}
-
-parse();
-// handshake(Cookie);
+const HS_PAGE = '/mypage/handshake-session?lang=id';
 
 module.exports = {
+
+    mapHandshake: async (Cookie) => {
+        try {
+            const { data } = await axios.get(baseURL + HS_PAGE, {
+                headers: {
+                    Cookie
+                }
+            });
+
+            const page = cheerio.load(data);
+
+            for (let i = 1; i < 45; i++) {
+                page(`#handshake${i}`).remove();
+            }
+
+            tableParser(page);
+
+            let parsed = page('table').parsetable();
+
+            if (!parsed.length) {
+                return {
+                    listMember: [],
+                    total: 0
+                }
+            }
+
+            let member = [];
+
+            for (let i = 0; i < parsed[4].length; i++) {
+                let namaMember = parsed[4][i];
+                let jumlahHs = parsed[5][i];
+
+                if (namaMember != 'Nama Member') {
+                    member.push(namaMember + '+' + jumlahHs);
+                }
+            }
+
+            member.sort();
+
+            let result = [];
+            
+            let loopMember = member[0].split('+')[0];
+            let count = 0;
+
+            let totalHS = 0;
+
+            for (let i = 0; i < member.length; i++) {
+                let memberName = member[i].split('+')[0];
+                let memberCount = Number(member[i].split('+')[1]);
+                
+                if (memberName == loopMember) {
+                    count += memberCount;
+                }
+                
+                else if (i != member.length - 1) {
+                    result.push({
+                        name: loopMember,
+                        count
+                    });
+
+                    loopMember = memberName;
+                    count = memberCount;
+                }
+
+                if (i == member.length - 1) {
+                    result.push({
+                        name: loopMember,
+                        count
+                    });
+                }
+
+                totalHS += memberCount;
+            }
+
+            result.sort((a, b) => {
+                return b.count - a.count;
+            })
+
+            return {
+                listMember: result,
+                total: totalHS
+            };
+        } catch (err) {
+            throw err;
+        }
+    },
 
     setName: async (Cookie) => {
         try {
@@ -88,7 +155,7 @@ module.exports = {
                     count++
                 }
                 
-                else {
+                else if (i != sorted.length - 1) {
                     mostSetlist.push({
                         name: loopSetlist,
                         count

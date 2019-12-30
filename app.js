@@ -2,7 +2,7 @@ const express = require('express');
 const axios = require('axios');
 const random = require('randomstring');
 
-const { mostShow, setName } = require('./helpers/helpers');
+const { mostShow, setName, mapHandshake } = require('./helpers/helpers');
 
 const app = express();
 
@@ -30,9 +30,12 @@ exports.main = async (req, res) => {
         } else {
             let listShow = await mostShow(Cookie);
             let name = await setName(Cookie);
+            let handshake = await mapHandshake(Cookie);
             
             listShow.name = name;
-    
+            listShow.handshake = handshake.listMember;
+            listShow.total_handshake = handshake.total;
+            
             res.status(200).json(listShow);
         }    
     } catch (err) {
