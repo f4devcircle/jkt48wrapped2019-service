@@ -1,13 +1,17 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
 const tableParser = require('cheerio-tableparser');
-const fs = require('fs');
+const knex = require('knex')(require('../knexfile'));
 
 const baseURL = 'https://jkt48.com/';
 const HS_PAGE = '/mypage/handshake-session?lang=id';
 
-module.exports = {
+const getItemDetail = async (name, table) => {
+    const result = (await knex(table).where('name', name))[0];
+    return result;
+};
 
+module.exports = {
     mapHandshake: async (Cookie) => {
         try {
             const { data } = await axios.get(baseURL + HS_PAGE, {
@@ -83,8 +87,13 @@ module.exports = {
 
             result.sort((a, b) => {
                 return b.count - a.count;
-            })
+            });
 
+            for (let index = 0; index < result.length; index++) {
+                const member = await getItemDetail(result[index].name, 'members');
+                if (member) result[index].image = member.image_url;
+            }
+            
             return {
                 listMember: result,
                 total: totalHS
@@ -177,6 +186,11 @@ module.exports = {
             mostSetlist.sort((a, b) => {
                 return b.count - a.count;
             });
+
+            for (let index = 0; index < mostSetlist.length; index++) {
+                const show = await getItemDetail(mostSetlist[index].name, 'setlists');
+                if (show) mostSetlist[index].image = show.image_url;
+            }
 
             return {
                 setlist: mostSetlist,
