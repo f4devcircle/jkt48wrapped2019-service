@@ -1,7 +1,29 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
+const HS_PAGE = 'mypage/handshake-session?lang=id';
 
 const baseURL = 'https://jkt48.com/';
+
+const handshake = async Cookie => {
+    const response = await axios.get(baseURL + HS_PAGE, {
+        headers: {
+            Cookie
+        }
+    });
+    require('fs').writeFileSync('./a.html', response.data)
+}
+
+const parse = _ => {
+    const firstHSId = 45;
+    const lastHSId = 67;
+    const page = cheerio.load(require('fs').readFileSync('./a.html', 'utf-8'));
+    const hs45 = page(`#handshake${lastHSId}`);
+    const table = page(hs45).html();
+    console.log(table);
+}
+
+parse();
+// handshake(Cookie);
 
 module.exports = {
 
@@ -96,6 +118,5 @@ module.exports = {
         } catch (err) {
             throw err;
         }
-    }
-
+    },
 }
